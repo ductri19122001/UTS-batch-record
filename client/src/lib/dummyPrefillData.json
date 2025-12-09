@@ -1,0 +1,76 @@
+{
+  "templateId": "powder-blend-v1",
+  "title": "Power Blend",
+  "batchId": "PB-2025-00017",
+  "executedAt": "2025-08-29T03:15:00Z",
+  "values": {
+    "materials": {
+      "material": {
+        "rows": [
+          {
+            "description": "Maltodextrin DE10",
+            "itemCode": "MDX-DE10-25KG",
+            "lotNo": "A2419-07",
+            "composition": 64.6,
+            "tareWt": 0.52,
+            "actualWt": 161.5,
+            "grossWt": 162.02
+          },
+          {
+            "description": "Citric Acid Anhydrous",
+            "itemCode": "CA-AN-25KG",
+            "lotNo": "C5491-04",
+            "composition": 2.5,
+            "tareWt": 0.48,
+            "actualWt": 6.25,
+            "grossWt": 6.73
+          },
+          {
+            "description": "Natural Strawberry Flavour",
+            "itemCode": "FL-STR-5KG",
+            "lotNo": "SFL-001-2508",
+            "composition": 0.5,
+            "tareWt": 0.22,
+            "actualWt": 1.25,
+            "grossWt": 1.47
+          },
+          {
+            "description": "Sucralose",
+            "itemCode": "SUC-1KG",
+            "lotNo": "SU-240815",
+            "composition": 0.05,
+            "tareWt": 0.06,
+            "actualWt": 0.125,
+            "grossWt": 0.185
+          },
+          {
+            "description": "Whey Protein Concentrate 80%",
+            "itemCode": "WPC80-20KG",
+            "lotNo": "WPC-2408-17",
+            "composition": 32.35,
+            "tareWt": 0.82,
+            "actualWt": 80.875,
+            "grossWt": 81.695
+          }
+        ]
+      }
+    },
+    "processSteps": {
+      "dispensing": {
+        "location": "Dispensary 2 — Cleanroom D",
+        "temperature": 22.3,
+        "humidity": 45.0
+      },
+      "mixing": {
+        "mixTime": 22
+      }
+    },
+    "qualityControl": {
+      "appearance": "Off white powder with tiny red specks. No visible lumps.",
+      "pH": 4.42,
+      "moisture": 3.1,
+      "waterActivity": 0.43,
+      "bulkDensity": 0.84
+    }
+  }
+}

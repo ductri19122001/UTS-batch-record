@@ -1,0 +1,150 @@
+{
+    "id": "vaccine-production-v2",
+    "title": "Vaccine Manufacturing Batch Record",
+    "sections": [
+        {
+            "id": "batchInfo",
+            "title": "Batch Information",
+            "fields": [
+                { "name": "batchNumber", "type": "text", "label": "Batch Number", "required": true },
+                { "name": "productName", "type": "select", "label": "Product Name", "options": ["COVID-19 Vaccine", "Influenza Vaccine", "Hepatitis B Vaccine"] },
+                { "name": "manufactureDate", "type": "date", "label": "Manufacturing Date" },
+                { "name": "targetYield", "type": "number", "label": "Target Yield (L)", "spec": "500-1000L" }
+            ]
+        },
+        {
+            "id": "rawMaterials",
+            "title": "Raw Materials & Components",
+            "subsections": [
+                {
+                    "id": "activeIngredients",
+                    "title": "Active Pharmaceutical Ingredients",
+                    "fields": [
+                        {
+                            "name": "apiTable",
+                            "type": "table",
+                            "label": "API Components",
+                            "critical": true,
+                            "columns": [
+                                { "id": "component", "label": "Component Name", "type": "text" },
+                                { "id": "supplier", "label": "Supplier", "type": "text" },
+                                { "id": "lotNumber", "label": "Lot Number", "type": "text" },
+                                { "id": "quantity", "label": "Quantity (mg)", "type": "number" },
+                                { "id": "purity", "label": "Purity (%)", "type": "number", "critical": true },
+                                { "id": "expiryDate", "label": "Expiry Date", "type": "date" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "excipients",
+                    "title": "Excipients & Buffers",
+                    "fields": [
+                        {
+                            "name": "bufferComponents",
+                            "type": "table",
+                            "label": "Buffer Components",
+                            "columns": [
+                                { "id": "name", "label": "Buffer Name", "type": "text" },
+                                { "id": "concentration", "label": "Concentration (mM)", "type": "number" },
+                                { "id": "volume", "label": "Volume (mL)", "type": "number" },
+                                { "id": "pH", "label": "pH", "type": "number" }
+                            ]
+                        },
+                        { "name": "stabilizer", "type": "select", "label": "Stabilizer Type", "options": ["Sucrose", "Trehalose", "Mannitol", "Glycerol"] },
+                        { "name": "stabilizerConc", "type": "number", "label": "Stabilizer Concentration (%)" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "fermentation",
+            "title": "Fermentation Process",
+            "subsections": [
+                {
+                    "id": "bioreactorSetup",
+                    "title": "Bioreactor Setup",
+                    "fields": [
+                        { "name": "reactorVolume", "type": "number", "label": "Working Volume (L)", "spec": "450-500L" },
+                        { "name": "temperature", "type": "range", "label": "Temperature (C)", "min": 25, "max": 40, "defaultValue": 37, "spec": "37�2�C", "method": "PT-100 probe" },
+                        { "name": "pH", "type": "range", "label": "pH Level", "min": 6.0, "max": 8.0, "defaultValue": 7.2, "spec": "7.2�0.2", "method": "pH electrode" },
+                        { "name": "stirrerSpeed", "type": "number", "label": "Stirrer Speed (rpm)", "spec": "150-200 rpm" }
+                    ]
+                },
+                {
+                    "id": "fermentationMonitoring",
+                    "title": "Process Monitoring",
+                    "fields": [
+                        {
+                            "name": "timePoints",
+                            "type": "table",
+                            "label": "Time Point Monitoring",
+                            "columns": [
+                                { "id": "timeHour", "label": "Time (hrs)", "type": "number" },
+                                { "id": "temp", "label": "Temperature (C)", "type": "number" },
+                                { "id": "phValue", "label": "pH", "type": "number" },
+                                { "id": "cellDensity", "label": "Cell Density", "type": "number" },
+                                { "id": "glucose", "label": "Glucose (g/L)", "type": "number" }
+                            ]
+                        },
+                        { "name": "fermentationDuration", "type": "duration", "label": "Total Fermentation Time", "spec": "72-96 hours" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "purification",
+            "title": "Downstream Processing",
+            "fields": [
+                { "name": "harvestVolume", "type": "number", "label": "Harvest Volume (L)" },
+                { "name": "clarificationMethod", "type": "select", "label": "Clarification Method","options": ["Centrifugation", "Depth Filtration", "Tangential Flow Filtration"] },
+                { "name": "proteinConcentration", "type": "range", "label": "Protein Concentration (mg/mL)", "min": 0.1, "max": 10.0, "defaultValue": 2.5, "spec": "2.0-3.0 mg/mL", "method": "Bradford Assay" }
+            ]
+        },
+        {
+            "id": "qualityControl",
+            "title": "In-Process Quality Control",
+            "subsections": [
+                {
+                    "id": "bioactivity",
+                    "title": "Bioactivity Testing",
+                    "fields": [
+                        { "name": "potency", "type": "range", "label": "Potency (IU/dose)","min": 80, "max": 120, "defaultValue": 100, "spec": "90-110 IU/dose", "method": "ELISA-QC-001" },
+                        { "name": "immunogenicity", "type": "text", "label": "Immunogenicity Result", "spec": "e95% seroconversion rate" }
+                    ]
+                },
+                {
+                    "id": "purityTests",
+                    "title": "Purity Analysis",
+                    "fields": [
+                        {
+                            "name": "impurityProfile",
+                            "type": "table",
+                            "label": "Impurity Analysis",
+                            "columns": [
+                                { "id": "impurityType", "label": "Impurity Type", "type": "text" },
+                                { "id": "testMethod", "label": "Test Method", "type": "text" },
+                                { "id": "specification", "label": "Specification", "type": "text" },
+                                { "id": "result", "label": "Result", "type": "number" },
+                                { "id": "passFail", "label": "Pass/Fail", "type": "select" }
+                            ]
+                        },
+                        { "name": "endotoxin", "type": "number", "label": "Endotoxin Level (EU/mL)", "spec": "<0.5 EU/mL", "method": "LAL-QC-003" }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "finalProduct",
+            "title": "Final Product Specifications",
+            "fields": [
+                { "name": "finalVolume", "type": "number", "label": "Final Bulk Volume (L)" },
+                { "name": "fillVolume", "type": "number", "label": "Fill Volume per Vial (mL)", "spec": "0.5�0.05 mL" },
+                { "name": "vialsProduced", "type": "number", "label": "Number of Vials Produced" },
+                { "name": "overallYield", "type": "range", "label": "Overall Yield (%)","min": 60, "max": 95, "defaultValue": 80, "spec": "e75%", "method": "Gravimetric" },
+                { "name": "shelfLife", "type": "duration", "label": "Assigned Shelf Life", "spec": "24 months at 2-8�C" },
+                { "name": "storageConditions", "type": "select", "label": "Storage Conditions", "options": ["2-8�C", "15-25�C", "-20�C", "-80�C"] }
+            ]
+        }
+    ]
+}

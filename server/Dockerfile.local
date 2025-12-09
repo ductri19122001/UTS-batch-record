@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy manifest files first
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --omit=dev
+
+# Copy everything (including prisma and source)
+COPY . .
+
+# Generate Prisma client after all files are in place
+RUN npx prisma generate
+
+# Start server (also regenerates just in case)
+CMD ["npm", "start"]

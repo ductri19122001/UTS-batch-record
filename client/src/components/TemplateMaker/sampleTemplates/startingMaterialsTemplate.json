@@ -1,0 +1,21 @@
+{
+  "id": "materials",
+  "title": "Starting Materials",
+  "fields": [
+    {
+      "id": "material",
+      "name": "material",
+      "type": "table",
+      "label": "Material",
+      "columns": [
+        { "id": "description", "type": "text", "label": "Description" },
+        { "id": "itemCode", "type": "text", "label": "Item Code" },
+        { "id": "lotNo", "type": "text", "label": "Lot No." },
+        { "id": "composition", "type": "number", "label": "% of Composition" },
+        { "id": "tareWt", "type": "number", "label": "Tare Wt" },
+        { "id": "actualWt", "type": "number", "label": "Actual Wt" },
+        { "id": "grossWt", "type": "number", "label": "Gross Wt" }
+      ]
+    }
+  ]
+}

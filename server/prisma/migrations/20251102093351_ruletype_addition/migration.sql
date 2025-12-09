@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "public"."RuleType" ADD VALUE 'APPROVAL_REQUIREMENT';

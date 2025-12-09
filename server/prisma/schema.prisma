@@ -1,0 +1,394 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * =========================
+ * Enums (from ERD)
+ * =========================
+ */
+
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  OPERATOR
+  QA
+  QC
+  MAINTENANCE
+  VIEWER
+}
+
+enum ProductCategory {
+  TABLET
+  CAPSULE
+  LIQUID
+  OINTMENT
+  POWDER
+  OTHER
+}
+
+enum BatchStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RELEASED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum CheckResult {
+  PASS
+  FAIL
+}
+
+enum ProcessStatus {
+  PLANNED
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum QualityCheckType {
+  IN_PROCESS
+  LINE_CLEARANCE
+  FINAL
+  SAMPLING
+  OTHER
+}
+
+enum SectionType {
+  SECTION
+  SUBSECTION
+}
+
+enum SectionStatus {
+  DRAFT
+  COMPLETED
+  PENDING_APPROVAL
+  APPROVED_FOR_CHANGE
+  APPROVED
+  REJECTED
+}
+
+enum RuleType {
+  FIELD_VALIDATION
+  SECTION_DEPENDENCY
+  BUSINESS_RULE
+  APPROVAL_REQUIREMENT
+}
+
+/**
+ * =========================
+ * Core / Master Data
+ * =========================
+ */
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  firstName String
+  lastName  String
+  role      UserRole
+  signature String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdBatches               BatchRecord[]         @relation("CreatedBatches")
+  approvedBatches              BatchRecord[]         @relation("ApprovedBatches")
+  auditLogs                    AuditLog[]
+  uploadedFiles                Attachment[]          @relation("UploadedBy")
+  Deviations                   Deviation[]           @relation("DeviationReportedBy")
+  CompletedBatchRecordSections BatchRecordSection[]  @relation("CompletedBatchSections")
+  UpdatedBatchRecordSections   BatchRecordSection[]  @relation("UpdatedBatchSections")
+  RequestedApprovals           ApprovalRequest[]     @relation("ApprovalRequester")
+  ReviewedApprovals            ApprovalRequest[]     @relation("ApprovalReviewer")
+  createdTemplates             BatchRecordTemplate[] @relation("TemplateCreator")
+  createdTemplateVersions      TemplateVersion[]     @relation("VersionCreator")
+  electronicSignatures         ElectronicSignature[]
+}
+
+model Product {
+  id                String          @id @default(cuid())
+  productCode       String          @unique
+  productName       String
+  category          ProductCategory
+  packSize          Float?
+  packUnit          String?
+  shelfLife         Int?
+  storageConditions String?
+  isActive          Boolean?        @default(true)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt
+
+  BatchRecords BatchRecord[]
+}
+
+/**
+ * =========================
+ * Batch & Execution
+ * =========================
+ */
+model BatchRecordTemplate {
+  id          String   @id
+  title       String
+  description String
+  isActive    Boolean  @default(true)
+  createdBy   String
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creator      User              @relation("TemplateCreator", fields: [createdBy], references: [id])
+  versions     TemplateVersion[] @relation("TemplateVersions")
+  rules        TemplateRule[]
+  batchRecords BatchRecord[]     @relation("TemplateBatchRecord")
+
+  @@index([createdBy])
+  @@index([isActive])
+}
+
+model TemplateVersion {
+  id          String   @id @default(cuid())
+  templateId  String
+  version     Int
+  title       String
+  description String
+  data        Json
+  isActive    Boolean  @default(false)
+  createdBy   String
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  template     BatchRecordTemplate @relation("TemplateVersions", fields: [templateId], references: [id], onDelete: Cascade)
+  creator      User                @relation("VersionCreator", fields: [createdBy], references: [id])
+  batchRecords BatchRecord[]       @relation("TemplateVersionRecords")
+
+  @@unique([templateId, version])
+  @@index([templateId])
+  @@index([isActive])
+  @@index([createdBy])
+}
+
+model TemplateRule {
+  id              String   @id @default(cuid())
+  templateId      String
+  ruleType        RuleType // "FIELD_VALIDATION" | "SECTION_DEPENDENCY" | "BUSINESS_RULE"
+  ruleData        Json // Contains rule configuration and logic
+  targetSectionId String?
+  targetFieldId   String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  template BatchRecordTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([targetSectionId])
+  @@index([targetFieldId])
+  @@index([isActive])
+}
+
+model BatchRecord {
+  id                String               @id @default(cuid())
+  batchNumber       String               @unique
+  productId         String
+  templateId        String
+  templateVersionId String
+  plannedQuantity   Float
+  actualQuantity    Float?
+  unit              String
+  status            BatchStatus
+  sections          BatchRecordSection[]
+  shelfLifeMonths   Int
+  manufacturingDate DateTime             @db.Timestamptz(6)
+  expiryDate        DateTime             @db.Timestamptz(6)
+  createdBy         String
+  approvedBy        String?
+  approvedAt        DateTime?            @db.Timestamptz(6)
+  releasedAt        DateTime?            @db.Timestamptz(6)
+  createdAt         DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt
+
+  product         Product             @relation(fields: [productId], references: [id])
+  creator         User                @relation("CreatedBatches", fields: [createdBy], references: [id])
+  approver        User?               @relation("ApprovedBatches", fields: [approvedBy], references: [id])
+  template        BatchRecordTemplate @relation("TemplateBatchRecord", fields: [templateId], references: [id])
+  templateVersion TemplateVersion     @relation("TemplateVersionRecords", fields: [templateVersionId], references: [id])
+
+  deviations           Deviation[]
+  attachments          Attachment[]
+  auditLogs            AuditLog[]
+  approvalRequests     ApprovalRequest[]
+  electronicSignatures ElectronicSignature[]
+
+  @@index([productId])
+  @@index([createdBy])
+  @@index([approvedBy])
+}
+
+model BatchRecordSection {
+  id                String        @id @default(cuid())
+  batchRecordId     String
+  sectionId         String
+  parentSectionId   String?
+  sectionData       Json
+  sectionType       SectionType
+  status            SectionStatus @default(DRAFT)
+  version           Int           @default(1)
+  isActive          Boolean       @default(true)
+  previousVersionId String?
+  approvalRequestId String?
+  lockedAt          DateTime?
+  lockedBy          String?
+  completedAt       DateTime?
+  updatedAt         DateTime?     @updatedAt
+  completedBy       String?
+  updatedBy         String?
+
+  batchRecord          BatchRecord           @relation(fields: [batchRecordId], references: [id])
+  parentSection        BatchRecordSection?   @relation("ParentChild", fields: [parentSectionId], references: [id])
+  childSections        BatchRecordSection[]  @relation("ParentChild")
+  previousVersion      BatchRecordSection?   @relation("VersionHistory", fields: [previousVersionId], references: [id])
+  nextVersions         BatchRecordSection[]  @relation("VersionHistory")
+  creator              User?                 @relation("CompletedBatchSections", fields: [completedBy], references: [id])
+  updator              User?                 @relation("UpdatedBatchSections", fields: [updatedBy], references: [id])
+  electronicSignatures ElectronicSignature[]
+
+  @@unique([batchRecordId, sectionId, version])
+  @@index([batchRecordId])
+  @@index([parentSectionId])
+  @@index([sectionId])
+  @@index([batchRecordId, sectionId, isActive])
+}
+
+model ApprovalRequest {
+  id              String    @id @default(cuid())
+  batchRecordId   String
+  sectionId       String
+  parentSectionId String?
+  requestType     String // "DEVIATION" | "CAPA" | "CHANGE_REQUEST" | "NORMAL_APPROVAL" | "SECTION_APPROVAL"
+  reason          String
+  description     String?
+  existingData    Json?
+  proposedData    Json?
+  requestedBy     String
+  requestedAt     DateTime  @default(now()) @db.Timestamptz(6)
+  status          String    @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  reviewedBy      String?
+  reviewedAt      DateTime? @db.Timestamptz(6)
+  reviewComments  String?
+
+  batchRecord BatchRecord @relation(fields: [batchRecordId], references: [id])
+  requester   User        @relation("ApprovalRequester", fields: [requestedBy], references: [id])
+  reviewer    User?       @relation("ApprovalReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([batchRecordId])
+  @@index([sectionId])
+  @@index([status])
+  @@index([parentSectionId])
+}
+
+model Deviation {
+  id               String    @id @default(cuid())
+  batchRecordId    String
+  description      String
+  rootCause        String?
+  correctiveAction String?
+  preventiveAction String?
+  reportedById     String
+  reportedAt       DateTime  @db.Timestamptz(6)
+  closedAt         DateTime? @db.Timestamptz(6)
+
+  batch      BatchRecord @relation(fields: [batchRecordId], references: [id])
+  reportedBy User        @relation("DeviationReportedBy", fields: [reportedById], references: [id])
+
+  @@index([batchRecordId])
+  @@index([reportedById])
+}
+
+/**
+ * =========================
+ * Specifications & Logs
+ * =========================
+ */
+
+model AuditLog {
+  id                   String   @id @default(cuid())
+  batchRecordId        String?
+  batchRecordSectionId String?
+  userId               String?
+  action               String
+  entityType           String
+  entityId             String
+  oldValue             Json?
+  newValue             Json?
+  ipAddress            String?
+  userAgent            String?
+  timestamp            DateTime @default(now()) @db.Timestamptz(6)
+
+  batch BatchRecord? @relation(fields: [batchRecordId], references: [id])
+  user  User?        @relation(fields: [userId], references: [id])
+
+  @@index([batchRecordId])
+  @@index([userId])
+}
+
+model Attachment {
+  id            String   @id @default(cuid())
+  batchRecordId String
+  fileName      String
+  fileType      String
+  fileSize      Int
+  fileUrl       String
+  uploadedAt    DateTime @db.Timestamptz(6)
+  uploadedById  String
+
+  batch      BatchRecord @relation(fields: [batchRecordId], references: [id])
+  uploadedBy User        @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([batchRecordId])
+  @@index([uploadedById])
+}
+
+/**
+ * =========================
+ * Electronic Signatures
+ * =========================
+ */
+
+model ElectronicSignature {
+  id          String   @id @default(cuid())
+  userId      String
+  entityType  String // e.g., BatchRecord | BatchRecordSection | ApprovalRequest
+  entityId    String
+  payloadHash String // SHA-256 of canonical payload
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  ipAddress   String?
+  userAgent   String?
+
+  // Optional FK helpers for common entities
+  batchRecordId   String?
+  sectionRecordId String?
+
+  user          User                @relation(fields: [userId], references: [id])
+  batchRecord   BatchRecord?        @relation(fields: [batchRecordId], references: [id])
+  sectionRecord BatchRecordSection? @relation(fields: [sectionRecordId], references: [id])
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([batchRecordId])
+  @@index([sectionRecordId])
+}
